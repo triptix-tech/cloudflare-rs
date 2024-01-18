@@ -66,6 +66,10 @@ pub struct CreateDnsRecordParams<'a> {
     /// Type of the DNS record that also holds the record value
     #[serde(flatten)]
     pub content: DnsContent,
+    /// Custom tags for the DNS record. This field has no effect on DNS responses.
+    pub tags: Option<Vec<String>>,
+    /// Comments or notes about the DNS record. This field has no effect on DNS responses.
+    pub comment: Option<String>,
 }
 
 /// Delete DNS Record

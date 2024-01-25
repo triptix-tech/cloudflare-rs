@@ -3,6 +3,7 @@ pub mod create_pool;
 pub mod delete_lb;
 pub mod delete_pool;
 pub mod list_lb;
+pub mod list_pool;
 pub mod pool_details;
 
 use crate::framework::response::ApiResult;
@@ -11,7 +12,6 @@ use chrono::DateTime;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::hash::{Hash, Hasher};
-use std::net::IpAddr;
 
 #[derive(Eq, PartialEq, Deserialize, Serialize, Clone, Debug)]
 pub struct LoadBalancer {
@@ -138,7 +138,7 @@ pub struct Pool {
     /// will failover to the next available pool.
     pub minimum_origins: u8,
     /// The ID of the Monitor to use for health checking origins within this pool.
-    pub monitor: String,
+    pub monitor: Option<String>,
     pub check_regions: Option<Vec<String>>,
     /// The list of origins within this pool. Traffic directed at this pool is balanced across all
     /// currently healthy origins, provided the pool itself is healthy.
@@ -160,7 +160,7 @@ pub struct Origin {
     /// Hostnames entered here should resolve directly to the origin, and not be a hostname proxied
     /// by Cloudflare.
     /// e.g. 0.0.0.0
-    pub address: IpAddr,
+    pub address: String,
     /// Whether to enable (the default) this origin within the Pool. Disabled origins will not
     /// receive traffic and are excluded from health checks. The origin will only be disabled for
     /// the current pool.

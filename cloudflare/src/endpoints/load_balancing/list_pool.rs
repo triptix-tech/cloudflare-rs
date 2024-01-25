@@ -5,17 +5,14 @@ use crate::framework::response::ApiResult;
 /// List Load Balancers
 /// <https://api.cloudflare.com/#load-balancers-list-load-balancers>
 #[derive(Debug)]
-pub struct ListPools<'a> {
-    /// The Zone to list Load Balancers from.
-    pub zone_identifier: &'a str,
-}
+pub struct ListPools {}
 
-impl<'a> EndpointSpec<Vec<Pool>> for ListPools<'a> {
+impl EndpointSpec<Vec<Pool>> for ListPools {
     fn method(&self) -> Method {
         Method::GET
     }
     fn path(&self) -> String {
-        format!("accounts/{}/load_balancers/pools", self.zone_identifier)
+        format!("user/load_balancers/pools")
     }
 }
 

@@ -19,13 +19,13 @@ async fn test_lb_pool(api_client: &AsyncClient, account_identifier: &str) -> any
     let origins = vec![
         Origin {
             name: "test-origin".to_owned(),
-            address: IpAddr::V4(Ipv4Addr::new(152, 122, 3, 1)),
+            address: "152.122.3.1".to_string(),
             enabled: true,
             weight: 1.0,
         },
         Origin {
             name: "test-origin-2".to_owned(),
-            address: IpAddr::V4(Ipv4Addr::new(152, 122, 3, 2)),
+            address: "152.122.3.1".to_string(),
             enabled: true,
             weight: 1.0,
         },

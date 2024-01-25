@@ -1,9 +1,8 @@
 #![forbid(unsafe_code)]
 
-use std::collections::HashMap;
-
 use clap::{Arg, ArgAction, ArgGroup, ArgMatches, Command};
-use cloudflare::endpoints::{account, dns, workers, zone};
+use cloudflare::endpoints::load_balancing::Origin;
+use cloudflare::endpoints::{account, dns, load_balancing, workers, zone};
 use cloudflare::framework::endpoint::Endpoint;
 use cloudflare::framework::response::{ApiError, ApiErrors};
 use cloudflare::framework::{
@@ -12,6 +11,7 @@ use cloudflare::framework::{
     Environment, HttpApiClient, HttpApiClientConfig, OrderDirection,
 };
 use serde::Serialize;
+use std::collections::HashMap;
 
 type SectionFunction<ApiClientType> = fn(&ArgMatches, &ApiClientType);
 
@@ -71,6 +71,86 @@ fn zone(arg_matches: &ArgMatches, api_client: &HttpApiClient) {
     let zone_identifier = arg_matches.get_one::<String>("zone_identifier");
     let endpoint = zone::ZoneDetails {
         identifier: zone_identifier.unwrap(),
+    };
+    if api_client.is_mock() {
+        add_static_mock(&endpoint);
+    }
+    let response = api_client.request(&endpoint);
+    print_response(response)
+}
+
+fn pools(_arg_matches: &ArgMatches, api_client: &HttpApiClient) {
+    let endpoint = load_balancing::list_pool::ListPools {};
+    if api_client.is_mock() {
+        add_static_mock(&endpoint);
+    }
+    let response = api_client.request(&endpoint);
+    print_response(response)
+}
+
+fn create_pool(arg_matches: &ArgMatches, api_client: &HttpApiClient) {
+    let account_identifier = arg_matches.get_one::<String>("account_identifier").unwrap();
+    let name = arg_matches.get_one::<String>("name").unwrap();
+    let origins = arg_matches.get_many::<String>("origins").unwrap();
+    let total = origins.len() as f64;
+    let endpoint = load_balancing::create_pool::CreatePool {
+        account_identifier,
+        params: load_balancing::create_pool::Params {
+            name: &name,
+            origins: &origins
+                .map(|o| Origin {
+                    name: o.clone(),
+                    address: o.clone(),
+                    enabled: true,
+                    weight: 1.0 / total,
+                })
+                .collect::<Vec<_>>(),
+            optional_params: None,
+        },
+    };
+    if api_client.is_mock() {
+        add_static_mock(&endpoint);
+    }
+    let response = api_client.request(&endpoint);
+    print_response(response)
+}
+
+fn delete_pool(arg_matches: &ArgMatches, api_client: &HttpApiClient) {
+    let id = arg_matches.get_one::<String>("id").unwrap();
+    let endpoint = load_balancing::delete_pool::DeletePool { identifier: id };
+    if api_client.is_mock() {
+        add_static_mock(&endpoint);
+    }
+    let response = api_client.request(&endpoint);
+    print_response(response)
+}
+
+fn load_balancers(arg_matches: &ArgMatches, api_client: &HttpApiClient) {
+    let zone_identifier = arg_matches.get_one::<String>("zone_identifier").unwrap();
+    let endpoint = load_balancing::list_lb::ListLoadBalancers { zone_identifier };
+    if api_client.is_mock() {
+        add_static_mock(&endpoint);
+    }
+    let response = api_client.request(&endpoint);
+    print_response(response)
+}
+
+fn create_load_balancer(arg_matches: &ArgMatches, api_client: &HttpApiClient) {
+    let name = arg_matches.get_one::<String>("name").unwrap();
+    let default: Vec<String> = arg_matches
+        .get_many::<String>("default_pool_ids")
+        .unwrap()
+        .cloned()
+        .collect();
+    let fallback = arg_matches.get_one::<String>("fallback_pool_id").unwrap();
+    let endpoint = load_balancing::create_lb::CreateLoadBalancer {
+        zone_identifier: "",
+        params: load_balancing::create_lb::Params {
+            name: name,
+            default_pools: default.as_slice(),
+            fallback_pool: fallback,
+            optional_params: None,
+        },
     };
     if api_client.is_mock() {
         add_static_mock(&endpoint);
@@ -259,6 +339,54 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 args: vec![Arg::new("zone_identifier").required(true)],
                 description: "DNS Records for a Zone",
                 function: dns,
+            },
+        ),
+        (
+            "pools",
+            Section {
+                args: vec![],
+                description: "Load Balancer Pools",
+                function: pools,
+            },
+        ),
+        (
+            "create_pool",
+            Section {
+                args: vec![
+                    Arg::new("name").required(true),
+                    Arg::new("origins").num_args(1..).required(true),
+                ],
+                description: "Create Load Balancer Pool",
+                function: create_pool,
+            },
+        ),
+        (
+            "delete_pool",
+            Section {
+                args: vec![Arg::new("id").required(true)],
+                description: "Delete Load Balancer Pool",
+                function: delete_pool,
+            },
+        ),
+        (
+            "load_balancers",
+            Section {
+                args: vec![Arg::new("zone_identifier").required(true)],
+                description: "List Load Balancers",
+                function: load_balancers,
+            },
+        ),
+        (
+            "create_load_balancer",
+            Section {
+                args: vec![
+                    Arg::new("account_identifier").required(true),
+                    Arg::new("name").required(true),
+                    Arg::new("default_pool_ids").num_args(1..).required(true),
+                    Arg::new("fallback_pool_id").required(true),
+                ],
+                description: "Create Load Balancer",
+                function: create_load_balancer,
             },
         ),
         (

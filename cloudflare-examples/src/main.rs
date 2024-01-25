@@ -122,6 +122,8 @@ fn create_txt_record(arg_matches: &ArgMatches, api_client: &HttpApiClient) {
             priority: None,
             proxied: None,
             ttl: None,
+            tags: None,
+            comment: None,
         },
     };
     if api_client.is_mock() {

@@ -4,7 +4,6 @@ use clap::{Arg, Command};
 use cloudflare::framework::async_api::Client as AsyncClient;
 use cloudflare::framework::{async_api, auth::Credentials, Environment, HttpApiClientConfig};
 use std::fmt::Display;
-use std::net::{IpAddr, Ipv4Addr};
 
 async fn tests(api_client: &AsyncClient, account_id: &str) -> anyhow::Result<()> {
     test_lb_pool(api_client, account_id).await?;
@@ -19,20 +18,19 @@ async fn test_lb_pool(api_client: &AsyncClient, account_identifier: &str) -> any
     let origins = vec![
         Origin {
             name: "test-origin".to_owned(),
-            address: IpAddr::V4(Ipv4Addr::new(152, 122, 3, 1)),
+            address: "152.122.3.1".to_string(),
             enabled: true,
             weight: 1.0,
         },
         Origin {
             name: "test-origin-2".to_owned(),
-            address: IpAddr::V4(Ipv4Addr::new(152, 122, 3, 2)),
+            address: "152.122.3.2".to_string(),
             enabled: true,
             weight: 1.0,
         },
     ];
     let pool = api_client
         .request(&create_pool::CreatePool {
-            account_identifier,
             params: create_pool::Params {
                 name: "test-pool",
                 optional_params: Some(create_pool::OptionalParams {
@@ -61,7 +59,6 @@ async fn test_lb_pool(api_client: &AsyncClient, account_identifier: &str) -> any
     // Delete the pool
     let _ = api_client
         .request(&delete_pool::DeletePool {
-            account_identifier,
             identifier: &pool.id,
         })
         .await

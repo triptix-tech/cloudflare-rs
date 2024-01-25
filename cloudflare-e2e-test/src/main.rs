@@ -5,13 +5,13 @@ use cloudflare::framework::async_api::Client as AsyncClient;
 use cloudflare::framework::{async_api, auth::Credentials, Environment, HttpApiClientConfig};
 use std::fmt::Display;
 
-async fn tests(api_client: &AsyncClient, account_id: &str) -> anyhow::Result<()> {
-    test_lb_pool(api_client, account_id).await?;
+async fn tests(api_client: &AsyncClient) -> anyhow::Result<()> {
+    test_lb_pool(api_client).await?;
     println!("Tests passed");
     Ok(())
 }
 
-async fn test_lb_pool(api_client: &AsyncClient, account_identifier: &str) -> anyhow::Result<()> {
+async fn test_lb_pool(api_client: &AsyncClient) -> anyhow::Result<()> {
     use cloudflare::endpoints::load_balancing::*;
 
     // Create a pool
@@ -31,7 +31,6 @@ async fn test_lb_pool(api_client: &AsyncClient, account_identifier: &str) -> any
     ];
     let pool = api_client
         .request(&create_pool::CreatePool {
-            account_identifier,
             params: create_pool::Params {
                 name: "test-pool",
                 optional_params: Some(create_pool::OptionalParams {
@@ -40,6 +39,7 @@ async fn test_lb_pool(api_client: &AsyncClient, account_identifier: &str) -> any
                     minimum_origins: Some(2),
                     monitor: Some("9004c07f1c0f33255410e45590251cf4"),
                     notification_email: Some("test@example.com"),
+                    ..Default::default()
                 }),
                 origins: &origins,
             },
@@ -51,7 +51,6 @@ async fn test_lb_pool(api_client: &AsyncClient, account_identifier: &str) -> any
     // Get the details, but wait until after we delete the pool to validate it.
     let pool_details = api_client
         .request(&pool_details::PoolDetails {
-            account_identifier,
             identifier: &pool.id,
         })
         .await
@@ -93,19 +92,12 @@ async fn main() -> anyhow::Result<()> {
             .env("CF_RS_AUTH_TOKEN")
             .help("API token generated on the \"My Account\" page")
             .conflicts_with_all(["email", "auth-key"]))
-        .arg(Arg::new("account-id")
-            .long("account-id")
-            .env("CF_RS_ZONE_ID")
-            .help("The ID of the account tests should be run on"))
         .arg_required_else_help(true);
 
     let mut matches = cli.get_matches();
     let email = matches.remove_one("email").unwrap();
     let key = matches.remove_one("auth-key");
     let token = matches.remove_one("auth-token");
-    let account_id = matches
-        .remove_one("account-id")
-        .expect("account_id is mandatory");
 
     let credentials: Credentials = if let Some(key) = key {
         Credentials::UserAuthKey { email, key }
@@ -121,7 +113,7 @@ async fn main() -> anyhow::Result<()> {
         Environment::Production,
     )?;
 
-    tests(&api_client, account_id).await
+    tests(&api_client).await
 }
 
 pub trait ResultExt<T, E: Display> {

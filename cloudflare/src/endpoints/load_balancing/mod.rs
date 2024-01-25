@@ -4,6 +4,8 @@ pub mod delete_lb;
 pub mod delete_pool;
 pub mod list_lb;
 pub mod list_pool;
+pub mod patch_lb;
+pub mod patch_pool;
 pub mod pool_details;
 
 use crate::framework::response::ApiResult;

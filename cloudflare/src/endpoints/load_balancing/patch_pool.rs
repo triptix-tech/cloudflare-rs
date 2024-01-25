@@ -3,34 +3,28 @@ use crate::framework::endpoint::{EndpointSpec, Method};
 
 use serde::Serialize;
 
-/// Create Pool
-/// <https://api.cloudflare.com/#account-load-balancer-pools-create-pool>
+/// Patch Pool
+/// <https://developers.cloudflare.com/api/operations/load-balancer-pools-patch-pool>
 #[derive(Debug)]
-pub struct CreatePool<'a> {
-    /// Optional parameters for the API call
+pub struct PatchPool<'a> {
+    /// Which pool to patch.
+    pub identifier: &'a str,
+    /// Parameters for the API call
     pub params: Params<'a>,
 }
 
 /// Mandatory parameters for creating a Load Balancer Pool.
 #[serde_with::skip_serializing_none]
-#[derive(Serialize, Clone, Debug)]
+#[derive(Serialize, Clone, Debug, Default)]
 pub struct Params<'a> {
     /// A short name (tag) for the pool.
     /// Only alphanumeric characters, hyphens and underscores are allowed.
     /// E.g. "primary-dc-1"
-    pub name: &'a str,
+    pub name: Option<&'a str>,
     /// The list of origins within this pool.
     /// Traffic directed at this pool is balanced across all currently healthy origins, provided
     /// the pool itself is healthy.
-    pub origins: &'a [Origin],
-    #[serde(flatten)]
-    pub optional_params: Option<OptionalParams<'a>>,
-}
-
-/// Optional parameters for creating a Load Balancer Pool.
-#[serde_with::skip_serializing_none]
-#[derive(Serialize, Clone, Debug, Default)]
-pub struct OptionalParams<'a> {
+    pub origins: Option<&'a [Origin]>,
     /// A human-readable description of the pool.
     /// e.g. "Primary data center - Provider XYZ"
     pub description: Option<&'a str>,
@@ -55,12 +49,12 @@ pub struct OptionalParams<'a> {
     pub longitude: Option<f64>,
 }
 
-impl<'a> EndpointSpec<Pool> for CreatePool<'a> {
+impl<'a> EndpointSpec<Pool> for PatchPool<'a> {
     fn method(&self) -> Method {
-        Method::POST
+        Method::PATCH
     }
     fn path(&self) -> String {
-        format!("user/load_balancers/pools")
+        format!("user/load_balancers/pools/{}", self.identifier)
     }
     #[inline]
     fn body(&self) -> Option<String> {

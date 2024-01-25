@@ -113,6 +113,32 @@ fn create_pool(arg_matches: &ArgMatches, api_client: &HttpApiClient) {
     print_response(response)
 }
 
+fn patch_pool(arg_matches: &ArgMatches, api_client: &HttpApiClient) {
+    let identifier = arg_matches.get_one::<String>("id").unwrap();
+    let origins = arg_matches.get_many::<String>("origins").unwrap();
+    let total = origins.len() as f64;
+    let origins = origins
+        .map(|o| Origin {
+            name: o.clone(),
+            address: o.clone(),
+            enabled: true,
+            weight: 1.0 / total,
+        })
+        .collect::<Vec<_>>();
+    let endpoint = load_balancing::patch_pool::PatchPool {
+        identifier,
+        params: load_balancing::patch_pool::Params {
+            origins: Some(origins.as_slice()),
+            ..Default::default()
+        },
+    };
+    if api_client.is_mock() {
+        add_static_mock(&endpoint);
+    }
+    let response = api_client.request(&endpoint);
+    print_response(response)
+}
+
 fn delete_pool(arg_matches: &ArgMatches, api_client: &HttpApiClient) {
     let id = arg_matches.get_one::<String>("id").unwrap();
     let endpoint = load_balancing::delete_pool::DeletePool { identifier: id };
@@ -164,6 +190,31 @@ fn delete_load_balancer(arg_matches: &ArgMatches, api_client: &HttpApiClient) {
     let endpoint = load_balancing::delete_lb::DeleteLoadBalancer {
         zone_identifier,
         identifier,
+    };
+    if api_client.is_mock() {
+        add_static_mock(&endpoint);
+    }
+    let response = api_client.request(&endpoint);
+    print_response(response)
+}
+
+fn patch_load_balancer(arg_matches: &ArgMatches, api_client: &HttpApiClient) {
+    let zone_identifier = arg_matches.get_one::<String>("zone_identifier").unwrap();
+    let identifier = arg_matches.get_one::<String>("id").unwrap();
+    let default_pools = arg_matches
+        .get_many::<String>("default_pools")
+        .unwrap()
+        .cloned()
+        .collect::<Vec<_>>();
+    let fallback_pool = arg_matches.get_one::<String>("fallback_pool").unwrap();
+    let endpoint = load_balancing::patch_lb::PatchLoadBalancer {
+        zone_identifier,
+        identifier,
+        params: load_balancing::patch_lb::Params {
+            default_pools: Some(default_pools.as_slice()),
+            fallback_pool: Some(fallback_pool),
+            ..Default::default()
+        },
     };
     if api_client.is_mock() {
         add_static_mock(&endpoint);
@@ -390,6 +441,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             },
         ),
         (
+            "patch_pool",
+            Section {
+                args: vec![
+                    Arg::new("id").required(true),
+                    Arg::new("origins").num_args(1..).required(true),
+                ],
+                description: "Patch Load Balancer Pool",
+                function: patch_pool,
+            },
+        ),
+        (
             "create_load_balancer",
             Section {
                 args: vec![
@@ -411,6 +473,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 ],
                 description: "Delete Load Balancer",
                 function: delete_load_balancer,
+            },
+        ),
+        (
+            "patch_load_balancer",
+            Section {
+                args: vec![
+                    Arg::new("id").required(true),
+                    Arg::new("zone_identifier").required(true),
+                    Arg::new("fallback_pool").required(true),
+                    Arg::new("default_pools").num_args(1..).required(true),
+                ],
+                description: "Patch Load Balancer",
+                function: patch_load_balancer,
             },
         ),
         (

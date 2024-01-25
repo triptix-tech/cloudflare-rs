@@ -7,6 +7,8 @@ use serde::Serialize;
 /// <https://api.cloudflare.com/#account-load-balancer-pools-create-pool>
 #[derive(Debug)]
 pub struct CreatePool<'a> {
+    /// The Cloudflare account to create this Pool under.
+    pub account_identifier: &'a str,
     /// Optional parameters for the API call
     pub params: Params<'a>,
 }
@@ -54,7 +56,7 @@ impl<'a> EndpointSpec<Pool> for CreatePool<'a> {
         Method::POST
     }
     fn path(&self) -> String {
-        format!("user/load_balancers/pools")
+        format!("accounts/{}/load_balancers/pools", self.account_identifier)
     }
     #[inline]
     fn body(&self) -> Option<String> {

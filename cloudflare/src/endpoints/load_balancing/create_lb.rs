@@ -20,9 +20,9 @@ pub struct CreateLoadBalancer<'a> {
 #[serde_with::skip_serializing_none]
 #[derive(Serialize, Clone, Debug)]
 pub struct Params<'a> {
-    /// A short name (tag) for the load balancer.
-    /// Only alphanumeric characters, hyphens and underscores are allowed.
-    /// E.g. "lb-user-facing"
+    /// The DNS hostname to associate with your Load Balancer.
+    /// If this hostname already exists as a DNS record in Cloudflare's DNS,
+    /// the Load Balancer will take precedence and the DNS record will not be used.
     pub name: &'a str,
     /// The list of LB Pools (by their IDs) ordered by their failover priority.
     pub default_pools: &'a [LbPoolId],

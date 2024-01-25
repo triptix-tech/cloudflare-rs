@@ -89,12 +89,10 @@ fn pools(_arg_matches: &ArgMatches, api_client: &HttpApiClient) {
 }
 
 fn create_pool(arg_matches: &ArgMatches, api_client: &HttpApiClient) {
-    let account_identifier = arg_matches.get_one::<String>("account_identifier").unwrap();
     let name = arg_matches.get_one::<String>("name").unwrap();
     let origins = arg_matches.get_many::<String>("origins").unwrap();
     let total = origins.len() as f64;
     let endpoint = load_balancing::create_pool::CreatePool {
-        account_identifier,
         params: load_balancing::create_pool::Params {
             name: &name,
             origins: &origins
@@ -137,20 +135,35 @@ fn load_balancers(arg_matches: &ArgMatches, api_client: &HttpApiClient) {
 
 fn create_load_balancer(arg_matches: &ArgMatches, api_client: &HttpApiClient) {
     let name = arg_matches.get_one::<String>("name").unwrap();
-    let default: Vec<String> = arg_matches
+    let default_pools: Vec<String> = arg_matches
         .get_many::<String>("default_pool_ids")
         .unwrap()
         .cloned()
         .collect();
-    let fallback = arg_matches.get_one::<String>("fallback_pool_id").unwrap();
+    let fallback_pool = arg_matches.get_one::<String>("fallback_pool_id").unwrap();
+    let zone_identifier = arg_matches.get_one::<String>("zone_identifier").unwrap();
     let endpoint = load_balancing::create_lb::CreateLoadBalancer {
-        zone_identifier: "",
+        zone_identifier,
         params: load_balancing::create_lb::Params {
-            name: name,
-            default_pools: default.as_slice(),
-            fallback_pool: fallback,
+            name,
+            default_pools: default_pools.as_slice(),
+            fallback_pool,
             optional_params: None,
         },
+    };
+    if api_client.is_mock() {
+        add_static_mock(&endpoint);
+    }
+    let response = api_client.request(&endpoint);
+    print_response(response)
+}
+
+fn delete_load_balancer(arg_matches: &ArgMatches, api_client: &HttpApiClient) {
+    let zone_identifier = arg_matches.get_one::<String>("zone_identifier").unwrap();
+    let identifier = arg_matches.get_one::<String>("id").unwrap();
+    let endpoint = load_balancing::delete_lb::DeleteLoadBalancer {
+        zone_identifier,
+        identifier,
     };
     if api_client.is_mock() {
         add_static_mock(&endpoint);
@@ -380,13 +393,24 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "create_load_balancer",
             Section {
                 args: vec![
-                    Arg::new("account_identifier").required(true),
+                    Arg::new("zone_identifier").required(true),
                     Arg::new("name").required(true),
                     Arg::new("default_pool_ids").num_args(1..).required(true),
                     Arg::new("fallback_pool_id").required(true),
                 ],
                 description: "Create Load Balancer",
                 function: create_load_balancer,
+            },
+        ),
+        (
+            "delete_load_balancer",
+            Section {
+                args: vec![
+                    Arg::new("id").required(true),
+                    Arg::new("zone_identifier").required(true),
+                ],
+                description: "Delete Load Balancer",
+                function: delete_load_balancer,
             },
         ),
         (

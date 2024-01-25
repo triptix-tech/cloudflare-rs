@@ -4,7 +4,6 @@ use clap::{Arg, Command};
 use cloudflare::framework::async_api::Client as AsyncClient;
 use cloudflare::framework::{async_api, auth::Credentials, Environment, HttpApiClientConfig};
 use std::fmt::Display;
-use std::net::{IpAddr, Ipv4Addr};
 
 async fn tests(api_client: &AsyncClient, account_id: &str) -> anyhow::Result<()> {
     test_lb_pool(api_client, account_id).await?;
@@ -61,7 +60,6 @@ async fn test_lb_pool(api_client: &AsyncClient, account_identifier: &str) -> any
     // Delete the pool
     let _ = api_client
         .request(&delete_pool::DeletePool {
-            account_identifier,
             identifier: &pool.id,
         })
         .await

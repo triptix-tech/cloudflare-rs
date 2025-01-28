@@ -241,7 +241,7 @@ pub struct DnsRecord {
     /// Time to live for DNS record. Value of 1 is 'automatic'
     pub ttl: u32,
     /// Zone identifier tag
-    pub zone_id: String,
+    //pub zone_id: String,
     /// When the record was last modified
     pub modified_on: DateTime<Utc>,
     /// When the record was created
@@ -256,7 +256,7 @@ pub struct DnsRecord {
     /// Whether the record is receiving the performance and security benefits of Cloudflare
     pub proxied: bool,
     /// The domain of the record
-    pub zone_name: String,
+    //pub zone_name: String,
     /// Comments or notes about the DNS record
     pub comment: Option<String>,
     /// Custom tags for the DNS record. This field has no effect on DNS responses

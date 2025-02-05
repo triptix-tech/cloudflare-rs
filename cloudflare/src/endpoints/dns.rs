@@ -235,7 +235,7 @@ pub struct DeleteDnsRecordResponse {
 #[derive(Deserialize, Debug)]
 pub struct DnsRecord {
     /// Extra Cloudflare-specific information about the record
-    pub meta: Meta,
+    //pub meta: Meta,
     /// DNS record name
     pub name: String,
     /// Time to live for DNS record. Value of 1 is 'automatic'
